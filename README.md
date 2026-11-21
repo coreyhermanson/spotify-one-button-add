@@ -1,4 +1,4 @@
-# SpotifyAddSongButton
+# spotify-one-button-add
 
 A single-user, serverless Python API that provides a one-click way to add your currently playing (or paused) Spotify track to a default playlist from a Windows global hotkey or an Android Quick Settings tile / home screen widget.
 
