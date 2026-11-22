@@ -76,7 +76,9 @@ class SpotifyClient:
     async def _default_persist_token(self, new_refresh_token: str) -> None:
         await asyncio.to_thread(persist_refresh_token, self._settings, new_refresh_token)
 
-    async def _get_access_token(self, *, force_refresh: bool = False) -> str:
+    async def _get_access_token(
+        self, *, force_refresh: bool = False, failed_token: str | None = None
+    ) -> str:
         now = time.monotonic()
         if (
             not force_refresh
@@ -87,12 +89,11 @@ class SpotifyClient:
 
         async with self._token_lock:
             now = time.monotonic()
-            if (
-                not force_refresh
-                and self._access_token
-                and now < self._token_expires_at
-            ):
-                return self._access_token
+            if self._access_token and now < self._token_expires_at:
+                # Another request may have already refreshed while we waited on the
+                # lock; only force a second refresh if our failed token is still current.
+                if not force_refresh or self._access_token != failed_token:
+                    return self._access_token
 
             return await self._refresh_access_token()
 
@@ -151,7 +152,7 @@ class SpotifyClient:
 
         if response.status_code == 401 and retry_on_401:
             logger.info("Spotify access token rejected with 401; refreshing and retrying once.")
-            token = await self._get_access_token(force_refresh=True)
+            token = await self._get_access_token(force_refresh=True, failed_token=token)
             response = await self._http.request(
                 method,
                 url,
@@ -196,7 +197,7 @@ class SpotifyClient:
                 message="Nothing is currently playing.",
             )
 
-        uri = item.get("uri", "")
+        uri = item.get("uri") or ""
         if item.get("is_local") is True or uri.startswith("spotify:local:"):
             return PlaybackResult(
                 status="unsupported",
@@ -212,7 +213,7 @@ class SpotifyClient:
         name = item.get("name") or "Unknown Track"
         artists = tuple(
             artist["name"]
-            for artist in item.get("artists", [])
+            for artist in item.get("artists") or []
             if isinstance(artist, dict) and artist.get("name")
         )
         return PlaybackResult(

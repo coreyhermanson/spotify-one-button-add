@@ -79,7 +79,7 @@ async def get_spotify_client(
     app_http_client: httpx.AsyncClient | None = getattr(request.app.state, "http_client", None)
     if app_http_client is not None:
         cached_client: SpotifyClient | None = getattr(request.app.state, "spotify_client", None)
-        if cached_client is None or cached_client._settings is not settings:
+        if cached_client is None:
             cached_client = SpotifyClient(settings=settings, http_client=app_http_client)
             request.app.state.spotify_client = cached_client
         yield cached_client
