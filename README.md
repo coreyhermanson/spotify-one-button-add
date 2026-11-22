@@ -100,9 +100,16 @@ SpotifyAddSongButton/
 
 ### Android (HTTP Shortcuts)
 1. Install **HTTP Shortcuts** and create a `POST` shortcut to `https://<your-url>.lambda-url.<region>.on.aws/add-current` with header `X-API-Key: <API_KEY>`.
-2. Set **Response Handling → UI Type** to **None**, and add a **Run on Success** script:
-   ```javascript
-   const data = JSON.parse(response.body);
-   showToast(data.message || "Done");
-   ```
-3. Pin it to your home screen or enable it as an Android **Quick Settings Tile**.
+2. Set **Response Handling → both On Success/On Failure** to **Show nothing (run silently)**
+3. Set **Scripting** 
+    - add a **Run on Success** script:
+       ```javascript
+       const data = JSON.parse(response.body);
+       showToast(data.message || "Done");
+       ```
+    - add a **Run on Failure** script:
+       ```javascript
+       showToast("Spotify Add failed: " + 
+       (networkError || response.statusCode));
+       ```
+4. Pin it to your home screen or enable it as an Android **Quick Settings Tile**.
